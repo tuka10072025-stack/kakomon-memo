@@ -1,706 +1,521 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#f5f1fa" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="過去問メモ">
+  <meta name="theme-color" content="#f7f4fb">
   <title>過去問メモ</title>
   <style>
     :root{
-      --bg:#f7f4fb;
-      --card:#ffffff;
-      --text:#222;
-      --sub:#777;
-      --line:#e8e2ef;
-      --accent:#6d5f86;
-      --ok:#2e9b63;
-      --ng:#d95050;
-      --chip:#eeeaf3;
+      --bg:#f7f4fb; --card:#fff; --text:#222; --sub:#777;
+      --line:#e8e2ef; --accent:#75658e; --chip:#eeeaf3;
       --shadow:0 8px 28px rgba(46,33,62,.08);
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
-    body{min-height:100vh}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}
     button,input,textarea{font:inherit}
     button{cursor:pointer}
-    .app{max-width:760px;margin:0 auto;min-height:100vh;padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+    .app{min-height:100vh;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
     .topbar{
-      position:sticky;top:0;z-index:20;
-      background:rgba(247,244,251,.94);backdrop-filter:blur(12px);
-      padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
-      border-bottom:1px solid var(--line);
-      display:flex;align-items:center;justify-content:space-between;gap:10px
+      position:sticky;top:0;z-index:20;background:rgba(247,244,251,.94);
+      backdrop-filter:blur(16px);padding:calc(18px + env(safe-area-inset-top)) 20px 16px;
+      border-bottom:1px solid var(--line)
     }
-    .topbar h1{font-size:21px;margin:0}
-    .small{font-size:13px;color:var(--sub)}
-    .screen{display:none;padding:16px}
-    .screen.active{display:block}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:16px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .homeBtn{
-      border:0;border-radius:18px;padding:20px 14px;background:var(--card);box-shadow:var(--shadow);
-      min-height:96px;text-align:left
+    .toprow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .title{font-size:28px;font-weight:800;letter-spacing:.02em}
+    .subtitle{font-size:14px;color:var(--sub);margin-top:3px}
+    .btn{
+      border:1px solid var(--line);background:#fff;color:var(--text);
+      border-radius:18px;padding:13px 18px;font-weight:700
     }
-    .homeBtn strong{display:block;font-size:18px;margin-bottom:5px}
-    .homeBtn span{color:var(--sub);font-size:13px}
-    .primary{border:0;background:var(--accent);color:white;border-radius:14px;padding:13px 16px;font-weight:700}
-    .secondary{border:1px solid var(--line);background:white;color:var(--text);border-radius:14px;padding:12px 15px}
-    .danger{border:1px solid #f0c9c9;background:#fff7f7;color:var(--ng);border-radius:14px;padding:11px 14px}
-    .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
-    .qitem{background:white;border:1px solid var(--line);border-radius:18px;padding:12px;display:flex;gap:12px;align-items:center}
-    .thumb{width:88px;height:110px;border-radius:12px;background:#f0edf4;object-fit:cover;flex:0 0 auto}
-    .qmeta{min-width:0;flex:1}
-    .qmeta strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
-    .chips{display:flex;gap:6px;flex-wrap:wrap}
-    .chip{background:var(--chip);border-radius:999px;padding:5px 9px;font-size:12px;color:#5f556d}
-    .chip.ok{background:#e6f5ec;color:#207445}
-    .chip.ng{background:#fdeaea;color:#a93a3a}
-    .empty{padding:42px 12px;text-align:center;color:var(--sub)}
-    .viewerWrap{overflow:hidden;touch-action:pan-y}
-    .slides{display:flex;width:200%;transition:transform .22s ease}
-    .slides.memo{transform:translateX(-50%)}
-    .slide{width:50%;flex:0 0 50%}
-    .imageCard{background:white;border:1px solid var(--line);border-radius:22px;padding:10px;box-shadow:var(--shadow)}
-    .questionImg{width:100%;max-height:68vh;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
-    .answerImg{width:100%;max-height:80vh;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
-    .answerItem{position:relative}
-    .removeAnswer{position:absolute;right:10px;top:10px;border:0;border-radius:999px;background:rgba(0,0,0,.6);color:white;width:32px;height:32px;font-weight:800}
-    .statusRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-    .statusBtn{border:2px solid transparent;background:white;border-radius:16px;padding:14px;font-weight:800;box-shadow:var(--shadow)}
-    .statusBtn.ok{color:var(--ok)}
-    .statusBtn.ng{color:var(--ng)}
-    .statusBtn.ok.selected{border-color:var(--ok);background:#eef9f3}
-    .statusBtn.ng.selected{border-color:var(--ng);background:#fff0f0}
-    .hint{text-align:center;color:var(--sub);font-size:13px;margin:12px 0 0}
-    .memoCard{background:white;border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
-    .memoBlock{margin-bottom:16px}
-    .memoBlock:last-child{margin-bottom:0}
-    .memoLabel{font-size:20px;font-weight:800;margin-bottom:7px}
-    textarea{width:100%;min-height:104px;border:1px solid var(--line);border-radius:14px;padding:12px;resize:vertical;background:#fcfbfd;outline:none}
-    textarea:focus{border-color:#b9aec9;box-shadow:0 0 0 3px rgba(109,95,134,.08)}
-    .sectionTitle{font-size:19px;margin:4px 0 12px}
-    .row{display:flex;gap:10px;align-items:center}
-    .row.between{justify-content:space-between}
-    .muted{color:var(--sub)}
-    .addBox{background:white;border:1px dashed #cfc6d9;border-radius:20px;padding:20px;text-align:center}
-    input[type=file]{width:100%}
-    .bottomBar{
-      position:fixed;left:0;right:0;bottom:0;z-index:30;
-      padding:10px 14px calc(10px + env(safe-area-inset-bottom));
-      background:rgba(247,244,251,.96);backdrop-filter:blur(12px);
-      border-top:1px solid var(--line)
+    .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+    .btn.small{padding:10px 14px;border-radius:14px}
+    .content{padding:18px 16px;max-width:760px;margin:0 auto}
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:24px;
+      box-shadow:var(--shadow);padding:18px;margin-bottom:16px
     }
-    .bottomInner{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-    .navBtn{border:0;border-radius:14px;background:white;padding:11px 8px;font-weight:700}
-    .navBtn.active{background:var(--accent);color:white}
-    .badge{font-size:12px;color:var(--sub);margin-top:4px}
-
-    .folderSection{margin-top:16px}
-    .folderGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .folderBtn{border:1px solid var(--line);background:#fff;border-radius:18px;padding:16px;text-align:left;box-shadow:var(--shadow)}
-    .folderBtn strong{display:block;font-size:17px;margin-bottom:4px}
-    .folderBtn span{font-size:12px;color:var(--sub)}
-
-
-    .tapZoomHint{
-      text-align:center;
-      font-size:12px;
-      color:var(--sub);
-      margin-top:6px;
+    .section-title{font-size:20px;font-weight:800;margin-bottom:3px}
+    .section-sub{font-size:13px;color:var(--sub);margin-bottom:14px}
+    .upload{
+      display:flex;align-items:center;justify-content:center;min-height:110px;
+      border:1.5px dashed #cbc1d9;border-radius:20px;background:#fbfaff;color:var(--accent);
+      font-weight:800;text-align:center;padding:18px
     }
-    .questionImg,.answerImg{cursor:zoom-in}
-
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .thumb-wrap{position:relative;background:#f4f0f8;border-radius:18px;overflow:hidden;aspect-ratio:3/4}
+    .thumb{width:100%;height:100%;object-fit:cover;display:block}
+    .thumb.contain{object-fit:contain;background:#faf9fc}
+    .x{
+      position:absolute;right:8px;top:8px;width:30px;height:30px;border:0;border-radius:50%;
+      background:rgba(0,0,0,.72);color:#fff;font-weight:800
+    }
+    .input{width:100%;border:1px solid var(--line);border-radius:16px;padding:14px;background:#fff;margin-top:10px}
+    textarea.input{min-height:110px;resize:vertical;line-height:1.55}
+    .memo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .memo-box{background:#faf8fc;border:1px solid var(--line);border-radius:18px;padding:12px}
+    .memo-label{font-weight:800;margin-bottom:7px}
+    .memo-box textarea{width:100%;border:0;background:transparent;min-height:95px;resize:vertical;outline:none;line-height:1.5}
+    .empty{padding:50px 20px;text-align:center;color:var(--sub)}
+    .list{display:grid;gap:12px}
+    .item{
+      background:#fff;border:1px solid var(--line);border-radius:20px;padding:12px;
+      display:grid;grid-template-columns:92px 1fr;gap:14px;align-items:center
+    }
+    .item-thumb{
+      width:92px;height:110px;border-radius:14px;background:#f4f0f8;object-fit:cover
+    }
+    .item-title{font-size:17px;font-weight:800;margin-bottom:6px}
+    .item-sub{font-size:13px;color:var(--sub)}
+    .viewer-card{padding:0;overflow:hidden}
+    .viewer-head{padding:18px 18px 10px}
+    .big-image-box{
+      margin:0 18px 12px;border:1px solid var(--line);border-radius:22px;overflow:hidden;
+      min-height:300px;max-height:68vh;background:#faf9fc;display:flex;align-items:center;justify-content:center
+    }
+    .big-image{display:block;width:100%;height:auto;max-height:68vh;object-fit:contain}
+    .image-error{padding:40px 18px;text-align:center;color:var(--sub)}
+    .hint{text-align:center;color:var(--sub);font-size:13px;padding:0 18px 18px}
+    .strip{display:flex;gap:10px;overflow-x:auto;padding:0 18px 18px}
+    .strip img{width:100px;height:110px;object-fit:cover;border-radius:14px;border:1px solid var(--line);flex:0 0 auto}
+    .pager{display:flex;align-items:center;justify-content:center;gap:12px;padding:0 18px 18px}
+    .pager button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:10px 15px}
+    .bottomnav{
+      position:fixed;left:0;right:0;bottom:0;z-index:25;padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+      display:flex;gap:12px;background:rgba(247,244,251,.95);backdrop-filter:blur(18px);border-top:1px solid var(--line)
+    }
+    .bottomnav button{flex:1;border:0;border-radius:18px;padding:16px;font-size:17px;font-weight:800;background:#fff;color:#1687e8}
+    .bottomnav button.active{background:var(--accent);color:#fff}
+    .full{
+      position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.95);display:none;
+      align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))
+    }
+    .full.open{display:flex}
+    .full img{max-width:100%;max-height:100%;object-fit:contain}
+    .full .close{
+      position:absolute;right:16px;top:calc(16px + env(safe-area-inset-top));
+      width:44px;height:44px;border:0;border-radius:50%;background:#fff;color:#111;font-size:25px
+    }
+    .hidden{display:none!important}
+    .notice{font-size:13px;color:#8a6f45;background:#fff8e8;border:1px solid #f0dfb8;border-radius:14px;padding:10px 12px;margin-top:10px}
     @media (max-width:420px){
+      .memo-grid{grid-template-columns:1fr}
       .grid{grid-template-columns:1fr 1fr}
-      .homeBtn{min-height:88px}
-      .thumb{width:76px;height:96px}
     }
   </style>
-  <link rel="apple-touch-icon" sizes="180x180" href="./fd24f841-c908-4b6c-a735-344806f52dbf.png?v=4">
-  <link rel="icon" type="image/png" href="./fd24f841-c908-4b6c-a735-344806f52dbf.png">
 </head>
 <body>
 <div class="app">
   <header class="topbar">
-    <div>
-      <h1 id="pageTitle">過去問メモ</h1>
-      <div class="small" id="pageSub">スクショで覚える・復習する</div>
+    <div class="toprow">
+      <div>
+        <div class="title" id="screenTitle">過去問メモ</div>
+        <div class="subtitle" id="screenSub">問題画像とメモをシンプルに保存</div>
+      </div>
+      <button class="btn hidden" id="backBtn" onclick="goHome()">戻る</button>
     </div>
-    <button class="secondary" id="backBtn" style="display:none">戻る</button>
   </header>
 
-  <main>
-    <section id="homeScreen" class="screen active">
-      <div class="grid">
-        <button class="homeBtn" data-filter="due3">
-          <strong>3日前</strong><span>3日前に解いた問題を復習</span>
-        </button>
-        <button class="homeBtn" data-filter="due7">
-          <strong>1週間前</strong><span>1週間前に解いた問題を復習</span>
-        </button>
-        
-        <button class="homeBtn" data-filter="all">
-          <strong>すべて</strong><span>登録した問題を全部見る</span>
-        </button>
-      </div>
-
-      <div style="height:16px"></div>
-
+  <main class="content">
+    <section id="homeScreen">
       <div class="card">
-        <div class="row between">
-          <div>
-            <strong>問題を追加</strong>
-            <div class="badge">問題アプリのスクショを選ぶだけ</div>
-          </div>
-          <button class="primary" id="chooseImageBtn">＋ 追加</button>
-        </div>
-        <input id="imageInput" type="file" accept="image/*" multiple hidden>
+        <div class="section-title">新しい問題</div>
+        <div class="section-sub">問題画像を追加して保存します</div>
+        <label class="upload">
+          ＋ 問題画像を追加
+          <input id="newProblemInput" type="file" accept="image/*" multiple hidden>
+        </label>
+        <div id="newProblemPreview" class="grid" style="margin-top:12px"></div>
+        <button id="saveNewBtn" class="btn primary" style="width:100%;margin-top:14px" onclick="saveNewQuestion()">問題を保存</button>
       </div>
-
-      <div class="card" style="margin-top:14px">
-        <div class="row between">
-          <strong>現在の登録数</strong>
-          <strong id="countText">0問</strong>
-        </div>
-      </div>
-      <div class="folderSection">
-        <div class="row between" style="margin-bottom:10px">
-          <div><strong>年度フォルダ</strong><div class="small">年度ごとに問題を仕分け</div></div>
-          <button class="secondary" id="addFolderBtn">＋年度</button>
-        </div>
-        <div id="folderGrid" class="folderGrid"></div>
+      <div class="card">
+        <div class="section-title">登録した問題</div>
+        <div class="section-sub"><span id="countText">0件</span></div>
+        <div id="questionList" class="list"></div>
       </div>
     </section>
 
-    <section id="listScreen" class="screen">
-      <div class="row between">
-        <h2 class="sectionTitle" id="listTitle">問題一覧</h2>
-        <button class="secondary" id="listAddBtn">＋追加</button>
-      </div>
-      <div id="questionList" class="list"></div>
-    </section>
+    <section id="viewerScreen" class="hidden">
+      <div class="card viewer-card" id="swipeArea">
+        <div class="viewer-head">
+          <div class="section-title" id="viewerModeTitle">問題</div>
+          <div class="section-sub" id="viewerModeSub">左スワイプでメモ</div>
+        </div>
 
-    <section id="viewerScreen" class="screen">
-      <div class="viewerWrap" id="viewerWrap">
-        <div class="slides" id="slides">
-          <div class="slide">
-            <div class="imageCard">
-              <img id="viewerImage" class="questionImg" alt="問題画像"><div class="tapZoomHint">画像をタップすると大きく開きます</div><div id="missingImageText" class="small" style="display:none;padding:18px;text-align:center">この問題画像を読み込めませんでした。新しく追加した画像は正常に保存されます。</div>
-            </div>
-            
-            
+        <div id="problemPane">
+          <div id="problemBigBox" class="big-image-box"></div>
+          <div class="hint">画像をタップすると大きく開きます</div>
+          <div id="problemPager" class="pager"></div>
 
-            <div class="card" style="margin-top:12px">
-              <div class="row between">
-                <div>
-                  <strong>解答・解説スクショ</strong>
-                  <div class="small">複数枚追加できます</div>
-                </div>
-                <button class="secondary" id="addAnswerBtn">＋ 追加</button>
+          <div class="card" style="margin:14px 18px 18px;padding:16px">
+            <div class="toprow">
+              <div>
+                <div class="section-title" style="font-size:18px">解答・解説スクショ</div>
+                <div class="section-sub" style="margin:2px 0 0">複数枚追加できます</div>
               </div>
-              <input id="answerInput" type="file" accept="image/*" multiple hidden>
-              <div id="answerList" style="display:flex;flex-direction:column;gap:12px;margin-top:12px"></div>
+              <label class="btn small">＋ 追加<input id="answerInput" type="file" accept="image/*" multiple hidden></label>
             </div>
-
-            <p class="hint">← 左へスワイプするとメモ</p>
+            <div id="answerStrip" class="strip" style="padding:14px 0 0"></div>
+            <div id="answerEmpty" class="item-sub" style="padding-top:14px">まだ解答・解説スクショはありません。</div>
           </div>
+          <div class="hint">← 左へスワイプするとメモ</div>
+        </div>
 
-          <div class="slide">
-            <div class="memoCard">
-              <div class="row between" style="margin-bottom:12px">
-                <strong>選択肢メモ</strong>
-                <span class="small">自動保存</span>
-              </div>
-              <div class="memoBlock">
-                <div class="memoLabel">イ</div>
-                <textarea id="memoI" placeholder="イについて覚えておきたいこと"></textarea>
-              </div>
-              <div class="memoBlock">
-                <div class="memoLabel">ロ</div>
-                <textarea id="memoRo" placeholder="ロについて覚えておきたいこと"></textarea>
-              </div>
-              <div class="memoBlock">
-                <div class="memoLabel">ハ</div>
-                <textarea id="memoHa" placeholder="ハについて覚えておきたいこと"></textarea>
-              </div>
-              <div class="memoBlock">
-                <div class="memoLabel">ニ</div>
-                <textarea id="memoNi" placeholder="ニについて覚えておきたいこと"></textarea>
-              </div>
+        <div id="memoPane" class="hidden">
+          <div class="card" style="margin:0 18px 18px;padding:16px">
+            <div class="section-title" style="font-size:18px">メモ</div>
+            <div class="section-sub">イ・ロ・ハ・ニを短く残せます</div>
+            <div class="memo-grid">
+              <div class="memo-box"><div class="memo-label">イ</div><textarea id="memoI" oninput="queueMemoSave()"></textarea></div>
+              <div class="memo-box"><div class="memo-label">ロ</div><textarea id="memoRo" oninput="queueMemoSave()"></textarea></div>
+              <div class="memo-box"><div class="memo-label">ハ</div><textarea id="memoHa" oninput="queueMemoSave()"></textarea></div>
+              <div class="memo-box"><div class="memo-label">ニ</div><textarea id="memoNi" oninput="queueMemoSave()"></textarea></div>
             </div>
-            <p class="hint">右へスワイプすると問題へ戻る →</p>
+            <div class="hint" style="padding:16px 0 0">→ 右へスワイプすると問題</div>
           </div>
         </div>
       </div>
 
-      <div class="toolbar" style="margin-top:14px">
-        <button class="primary" id="shareImagesBtn">画像を共有</button>
-        <button class="secondary" id="prevBtn">前の問題</button>
-        <button class="secondary" id="nextBtn">次の問題</button>
-        <button class="danger" id="deleteBtn">削除</button>
-      </div>
+      <button class="btn" style="width:100%;margin-top:8px;color:#b33" onclick="deleteCurrent()">この問題を削除</button>
     </section>
   </main>
+
+  <nav class="bottomnav">
+    <button id="homeNav" class="active" onclick="goHome()">ホーム</button>
+    <button id="listNav" onclick="scrollToList()">問題一覧</button>
+  </nav>
 </div>
 
-<div class="bottomBar">
-  <div class="bottomInner">
-    <button class="navBtn active" id="homeNav">ホーム</button>
-    <button class="navBtn" id="allNav">問題一覧</button>
-    
-  </div>
+<div id="fullViewer" class="full" onclick="closeFull()">
+  <button class="close" onclick="closeFull()">×</button>
+  <img id="fullImage" onclick="event.stopPropagation()">
 </div>
 
 <script>
-(() => {
-  const DB_NAME = 'kakomonMemoDB';
-  const STORE = 'questions';
-  let db;
-  let currentFilter = 'all';
-  let currentYear = null;
-  let yearFolders = [];
-  let currentIds = [];
-  let currentIndex = 0;
-  let currentQuestion = null;
-  let memoSaveTimer = null;
+const DB_NAME='kakomonMemoDB';
+const STORE='questions';
+const DB_VERSION=1;
 
-  const $ = id => document.getElementById(id);
+let db=null;
+let current=null;
+let currentProblemIndex=0;
+let pendingNewImages=[];
+let memoTimer=null;
+let objectUrls=[];
 
-  function openDB(){
-    return new Promise((resolve,reject)=>{
-      const req = indexedDB.open(DB_NAME,1);
-      req.onupgradeneeded = e => {
-        const d = e.target.result;
-        if(!d.objectStoreNames.contains(STORE)){
-          d.createObjectStore(STORE,{keyPath:'id'});
-        }
-      };
-      req.onsuccess = e => { db = e.target.result; resolve(db); };
-      req.onerror = () => reject(req.error);
-    });
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(STORE)){
+        d.createObjectStore(STORE,{keyPath:'id'});
+      }
+    };
+    req.onsuccess=()=>{db=req.result;resolve(db)};
+    req.onerror=()=>reject(req.error);
+  });
+}
+function tx(mode='readonly'){return db.transaction(STORE,mode).objectStore(STORE)}
+function getAll(){
+  return new Promise((resolve,reject)=>{
+    const r=tx().getAll(); r.onsuccess=()=>resolve(r.result||[]); r.onerror=()=>reject(r.error);
+  });
+}
+function getOne(id){
+  return new Promise((resolve,reject)=>{
+    const r=tx().get(id); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+  });
+}
+function putOne(obj){
+  return new Promise((resolve,reject)=>{
+    const r=tx('readwrite').put(obj); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
+  });
+}
+function deleteOne(id){
+  return new Promise((resolve,reject)=>{
+    const r=tx('readwrite').delete(id); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);
+  });
+}
+
+function makeId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function readFileAsDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader(); fr.onload=()=>resolve(fr.result); fr.onerror=()=>reject(fr.error); fr.readAsDataURL(file);
+  });
+}
+async function compressImage(file){
+  const src=await readFileAsDataURL(file);
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=1600;
+      let w=img.width,h=img.height;
+      if(w>max||h>max){
+        const r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r);
+      }
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',0.72));
+    };
+    img.onerror=reject;img.src=src;
+  });
+}
+
+function normalizeMemo(q){
+  const m=q.memo||q.memos||{};
+  return {
+    i:m.i ?? m.I ?? q.memoI ?? q.i ?? '',
+    ro:m.ro ?? m.ロ ?? q.memoRo ?? q.ro ?? '',
+    ha:m.ha ?? m.ハ ?? q.memoHa ?? q.ha ?? '',
+    ni:m.ni ?? m.ニ ?? q.memoNi ?? q.ni ?? ''
+  };
+}
+function candidates(q,type){
+  const problemKeys=['problemImages','questionImages','images','problemScreenshots','questionScreenshots','problemImage','questionImage','image'];
+  const answerKeys=['answerImages','solutionImages','explanationImages','answerScreenshots','solutionScreenshots','answerImage','solutionImage'];
+  const keys=type==='problem'?problemKeys:answerKeys;
+  let out=[];
+  for(const k of keys){
+    const v=q?.[k];
+    if(Array.isArray(v)) out.push(...v);
+    else if(v!=null) out.push(v);
   }
-
-  function putQuestion(q){
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction(STORE,'readwrite');
-      tx.objectStore(STORE).put(q);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
+  return out.filter(Boolean);
+}
+function normalizeRecord(q){
+  return {
+    ...q,
+    id:q.id ?? makeId(),
+    problemImages:candidates(q,'problem'),
+    answerImages:candidates(q,'answer'),
+    memo:normalizeMemo(q),
+    createdAt:q.createdAt ?? q.date ?? Date.now()
+  };
+}
+function clearObjectUrls(){
+  objectUrls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(e){}});
+  objectUrls=[];
+}
+function toRenderable(value){
+  if(!value)return null;
+  if(typeof value==='string') return value;
+  if(value instanceof Blob){
+    const u=URL.createObjectURL(value);objectUrls.push(u);return u;
   }
-
-  function getQuestion(id){
-    return new Promise((resolve,reject)=>{
-      const req = db.transaction(STORE,'readonly').objectStore(STORE).get(id);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
+  if(value instanceof ArrayBuffer){
+    const u=URL.createObjectURL(new Blob([value]));objectUrls.push(u);return u;
   }
-
-  function getAll(){
-    return new Promise((resolve,reject)=>{
-      const req = db.transaction(STORE,'readonly').objectStore(STORE).getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
+  if(value.data instanceof Blob){
+    const u=URL.createObjectURL(value.data);objectUrls.push(u);return u;
   }
-
-  function deleteQuestion(id){
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction(STORE,'readwrite');
-      tx.objectStore(STORE).delete(id);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
+  if(value.blob instanceof Blob){
+    const u=URL.createObjectURL(value.blob);objectUrls.push(u);return u;
   }
-
-  function showScreen(name){
-    ['homeScreen','listScreen','viewerScreen'].forEach(id => $(id).classList.remove('active'));
-    $(name).classList.add('active');
-    $('backBtn').style.display = name === 'homeScreen' ? 'none' : 'inline-block';
-    $('pageTitle').textContent = name === 'viewerScreen' ? '問題' : name === 'listScreen' ? '問題一覧' : '過去問メモ';
-    $('pageSub').textContent = name === 'viewerScreen' ? '左スワイプでメモ' : name === 'listScreen' ? 'タップして開く' : 'スクショで覚える・復習する';
-    updateNav(name);
+  return value.data || value.src || value.url || value.dataUrl || value.base64 || null;
+}
+function makeImg(value,className='thumb'){
+  const src=toRenderable(value);
+  const img=document.createElement('img');img.className=className;
+  if(!src){
+    img.alt='画像を読み込めません';
+    return img;
   }
+  img.src=src;
+  img.onclick=()=>openFull(src);
+  img.onerror=()=>{
+    img.replaceWith(makeImageError());
+  };
+  return img;
+}
+function makeImageError(){
+  const d=document.createElement('div');
+  d.className='image-error';
+  d.innerHTML='この画像データは以前の保存方法で参照が切れています。<br>画像をもう一度追加すると、今後は消えにくい形式で保存されます。';
+  return d;
+}
 
-  function updateNav(name){
-    ['homeNav','allNav'].forEach(id => {
-      const el=$(id);
-      if(el) el.classList.remove('active');
-    });
-    if(name==='homeScreen'){
-      const el=$('homeNav'); if(el) el.classList.add('active');
+document.getElementById('newProblemInput').addEventListener('change',async e=>{
+  const files=[...(e.target.files||[])];
+  for(const f of files){
+    try{pendingNewImages.push(await compressImage(f))}
+    catch(err){alert('画像を読み込めませんでした')}
+  }
+  e.target.value='';
+  renderNewPreview();
+});
+function renderNewPreview(){
+  const el=document.getElementById('newProblemPreview');el.innerHTML='';
+  pendingNewImages.forEach((src,i)=>{
+    const w=document.createElement('div');w.className='thumb-wrap';
+    const img=document.createElement('img');img.className='thumb contain';img.src=src;img.onclick=()=>openFull(src);
+    const b=document.createElement('button');b.className='x';b.textContent='×';b.onclick=()=>{pendingNewImages.splice(i,1);renderNewPreview()};
+    w.append(img,b);el.appendChild(w);
+  });
+}
+async function saveNewQuestion(){
+  if(!pendingNewImages.length){alert('問題画像を追加してください');return}
+  const obj={
+    id:makeId(),
+    problemImages:[...pendingNewImages],
+    answerImages:[],
+    memo:{i:'',ro:'',ha:'',ni:''},
+    createdAt:Date.now()
+  };
+  try{
+    await putOne(obj);pendingNewImages=[];renderNewPreview();await loadHome();
+  }catch(e){alert('保存できませんでした。画像枚数を減らしてお試しください。')}
+}
+
+async function loadHome(){
+  clearObjectUrls();
+  const all=(await getAll()).map(normalizeRecord).sort((a,b)=>Number(b.createdAt)-Number(a.createdAt));
+  document.getElementById('countText').textContent=all.length+'件';
+  const list=document.getElementById('questionList');list.innerHTML='';
+  if(!all.length){list.innerHTML='<div class="empty">まだ問題がありません</div>';return}
+  all.forEach((q,idx)=>{
+    const item=document.createElement('div');item.className='item';item.onclick=()=>openQuestion(q.id);
+    const first=q.problemImages[0];
+    let thumb;
+    const src=toRenderable(first);
+    if(src){
+      thumb=document.createElement('img');thumb.className='item-thumb';thumb.src=src;
+      thumb.onerror=()=>{thumb.style.display='none'};
     }else{
-      const el=$('allNav'); if(el) el.classList.add('active');
+      thumb=document.createElement('div');thumb.className='item-thumb';
     }
-  }
-
-
-
-  function openImageInNewTab(src){
-    if(!src) return;
-    try{
-      window.open(src, '_blank');
-    }catch(e){
-      location.href = src;
-    }
-  }
-
-  function imageSrc(value){
-    if(!value) return '';
-    try{
-      if(value instanceof Blob) return URL.createObjectURL(value);
-      if(typeof value === 'string') return value;
-      if(value && typeof value.dataURL === 'string') return value.dataURL;
-      if(value && typeof value.src === 'string') return value.src;
-    }catch(e){}
-    return '';
-  }
-
-  function dateText(ts){
-    if(!ts) return '未回答';
-    return new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'numeric',day:'numeric'}).format(new Date(ts));
-  }
-
-  function startOfDay(ts){
-    const d = new Date(ts);
-    d.setHours(0,0,0,0);
-    return d.getTime();
-  }
-
-  function dayDiff(ts){
-    if(!ts) return null;
-    const now = startOfDay(Date.now());
-    const then = startOfDay(ts);
-    return Math.round((now - then) / 86400000);
-  }
-
-  function filterQuestions(all, filter, year=currentYear){
-    let arr=[...all];
-    if(year!==null) arr=arr.filter(q=>(q.year||'未分類')===year);
-    const sorted=arr.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    if(filter==='due3') return sorted.filter(q=>dayDiff(q.lastStudiedAt)===3);
-    if(filter==='due7') return sorted.filter(q=>dayDiff(q.lastStudiedAt)===7);
-    return sorted;
-  }
-
-
-  function loadFolders(){
-    try{ yearFolders=JSON.parse(localStorage.getItem('kakomonYearFolders')||'[]'); }
-    catch{ yearFolders=[]; }
-    if(!Array.isArray(yearFolders)) yearFolders=[];
-  }
-  function saveFolders(){ localStorage.setItem('kakomonYearFolders',JSON.stringify(yearFolders)); }
-
-  async function renderFolders(){
-    const all=await getAll();
-    all.forEach(q=>{ if(q.year && !yearFolders.includes(q.year)) yearFolders.push(q.year); });
-    yearFolders.sort().reverse();
-    saveFolders();
-    const grid=$('folderGrid');
-    if(!grid) return;
-    grid.innerHTML='';
-    const folders=[...yearFolders];
-    if(all.some(q=>!q.year)) folders.push('未分類');
-    if(!folders.length){
-      grid.innerHTML='<div class="small" style="grid-column:1/-1">「＋年度」から年度を追加できます。</div>';
-      return;
-    }
-    folders.forEach(folder=>{
-      const count=all.filter(q=>(q.year||'未分類')===folder).length;
-      const b=document.createElement('button');
-      b.className='folderBtn';
-      b.innerHTML=`<strong>${folder}</strong><span>${count}問</span>`;
-      b.onclick=()=>{ currentYear=folder; openList('all'); };
-      grid.appendChild(b);
-    });
-  }
-
-  async function addFolder(){
-    const name=prompt('年度を入力してください\n例：令和8年');
-    if(!name||!name.trim()) return;
-    const y=name.trim();
-    if(!yearFolders.includes(y)){
-      yearFolders.push(y);
-      yearFolders.sort().reverse();
-      saveFolders();
-    }
-    await renderFolders();
-  }
-
-  async function refreshCount(){
-    const all=await getAll();
-    $('countText').textContent=`${all.length}問`;
-    await renderFolders();
-  }
-
-  async function openList(filter='all'){
-    currentFilter = filter;
-    const all = await getAll();
-    const filtered = filterQuestions(all, filter, currentYear);
-    currentIds = filtered.map(q=>q.id);
-    const titles = {all:'すべての問題',due3:'3日前に解いた問題',due7:'1週間前に解いた問題'};
-    $('listTitle').textContent = currentYear ? `${currentYear}・${titles[filter] || '問題一覧'}` : (titles[filter] || '問題一覧');
-    const list = $('questionList');
-    list.innerHTML = '';
-    if(!filtered.length){
-      list.innerHTML = `<div class="empty">該当する問題はありません</div>`;
-    } else {
-      for(const [index,q] of filtered.entries()){
-        const url = imageSrc(q.image);
-        const el = document.createElement('button');
-        el.className='qitem';
-        el.style.width='100%';
-        el.style.border='1px solid var(--line)';
-        el.style.textAlign='left';
-        el.innerHTML = `
-          <img class="thumb" src="${url}" alt="">
-          <div class="qmeta">
-            <strong>問題 ${index+1}</strong>
-            <div class="chips">
-              
-              
-              
-              
-            </div>
-          </div>`;
-        el.onclick=()=>openViewerById(q.id);
-        list.appendChild(el);
-      }
-    }
-    showScreen('listScreen');
-  }
-
-  async function openViewerById(id){
-    if(!currentIds.includes(id)){
-      const all=await getAll();
-      currentIds=filterQuestions(all,currentFilter,currentYear).map(q=>q.id);
-    }
-    currentIndex=Math.max(0,currentIds.indexOf(id));
-    const q=await getQuestion(id);
-    if(q){
-      q.lastStudiedAt=Date.now();
-      await putQuestion(q);
-    }
-    await loadCurrent();
-    showScreen('viewerScreen');
-  }
-
-  async function loadCurrent(){
-    if(!currentIds.length){ await openList(currentFilter); return; }
-    const id=currentIds[currentIndex];
-    const q=await getQuestion(id);
-    if(!q){ await openList(currentFilter); return; }
-    currentQuestion=q;
-    const oldUrl=$('viewerImage').dataset.url;
-    if(oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
-    const url=imageSrc(q.image);
-    $('viewerImage').src=url || '';
-    $('viewerImage').dataset.url=url || '';
-    $('viewerImage').style.display = url ? 'block' : 'none';
-    $('viewerImage').onclick = () => openImageInNewTab(url);
-    const missing=$('missingImageText');
-    if(missing) missing.style.display = url ? 'none' : 'block';
-    $('memoI').value=q.memos?.i || '';
-    $('memoRo').value=q.memos?.ro || '';
-    $('memoHa').value=q.memos?.ha || '';
-    $('memoNi').value=q.memos?.ni || '';
-
-    if(!q.answers) q.answers=[];
-    renderAnswers();
-    $('slides').classList.remove('memo');
-    $('prevBtn').disabled=currentIndex===0;
-    $('nextBtn').disabled=currentIndex===currentIds.length-1;
-  }
-
-  function scheduleMemoSave(){
-    clearTimeout(memoSaveTimer);
-    memoSaveTimer=setTimeout(async()=>{
-      if(!currentQuestion) return;
-      currentQuestion.memos={
-        i:$('memoI').value,
-        ro:$('memoRo').value,
-        ha:$('memoHa').value,
-        ni:$('memoNi').value
-      };
-      await putQuestion(currentQuestion);
-    },250);
-  }
-
-  async function addImages(files){
-    if(!files?.length) return;
-    const chosenYear=(currentYear && currentYear!=='未分類') ? currentYear : null;
-    const now=Date.now();
-    let n=0;
-    for(const file of files){
-      const q={
-        id: crypto.randomUUID ? crypto.randomUUID() : `${now}-${Math.random()}`,
-        image:file,
-        answers:[],
-        year:chosenYear,
-        createdAt:now+n,
-        lastStudiedAt:null,
-        memos:{i:'',ro:'',ha:'',ni:''}
-      };
-      await putQuestion(q);
-      n++;
-    }
-    $('imageInput').value='';
-    await refreshCount();
-    await openList('all');
-  }
-
-
-  let answerUrls = [];
-
-  function renderAnswers(){
-    answerUrls.forEach(u=>URL.revokeObjectURL(u));
-    answerUrls=[];
-    const box=$('answerList');
-    if(!box || !currentQuestion) return;
-    box.innerHTML='';
-    const answers=currentQuestion.answers || [];
-    if(!answers.length){
-      box.innerHTML='<div class="small">まだ解答・解説スクショはありません。</div>';
-      return;
-    }
-    answers.forEach((blob,idx)=>{
-      const url=imageSrc(blob);
-      answerUrls.push(url);
-      const item=document.createElement('div');
-      item.className='answerItem imageCard';
-      item.innerHTML=`<img class="answerImg" src="${url}" alt="解答画像 ${idx+1}"><button class="removeAnswer" aria-label="削除">×</button>`;
-      const answerImg = item.querySelector('img');
-      if(answerImg) answerImg.onclick = () => openImageInNewTab(url);
-      item.querySelector('.removeAnswer').onclick=async()=>{
-        if(!confirm(`解答画像 ${idx+1} を削除しますか？`)) return;
-        currentQuestion.answers.splice(idx,1);
-        await putQuestion(currentQuestion);
-        renderAnswers();
-      };
-      box.appendChild(item);
-    });
-  }
-
-  async function addAnswers(files){
-    if(!currentQuestion || !files?.length) return;
-    currentQuestion.answers = currentQuestion.answers || [];
-    for(const file of files) currentQuestion.answers.push(file);
-    await putQuestion(currentQuestion);
-    $('answerInput').value='';
-    renderAnswers();
-  }
-
-  $('addFolderBtn').onclick=addFolder;
-  $('chooseImageBtn').onclick=()=>$('imageInput').click();
-  $('listAddBtn').onclick=()=>$('imageInput').click();
-  $('imageInput').addEventListener('change',e=>addImages([...e.target.files]));
-
-  $('answerList')?.addEventListener('click', e=>{
-    const img=e.target.closest('.answerImg');
-    if(img && img.src) openImageInNewTab(img.src);
+    const info=document.createElement('div');
+    info.innerHTML='<div class="item-title">問題 '+(idx+1)+'</div><div class="item-sub">問題画像 '+q.problemImages.length+'枚 ・ 解答 '+q.answerImages.length+'枚</div>';
+    item.append(thumb,info);list.appendChild(item);
   });
+}
 
-  $('addAnswerBtn').onclick=()=>$('answerInput').click();
-  $('answerInput').addEventListener('change',e=>addAnswers([...e.target.files]));
+async function openQuestion(id){
+  clearObjectUrls();
+  current=normalizeRecord(await getOne(id));
+  if(!current)return;
+  currentProblemIndex=0;
+  document.getElementById('homeScreen').classList.add('hidden');
+  document.getElementById('viewerScreen').classList.remove('hidden');
+  document.getElementById('backBtn').classList.remove('hidden');
+  document.getElementById('screenTitle').textContent='問題';
+  document.getElementById('screenSub').textContent='左スワイプでメモ';
+  showProblemPane();
+  fillMemo();
+  renderProblem();
+  renderAnswers();
+  window.scrollTo(0,0);
+}
+function renderProblem(){
+  const box=document.getElementById('problemBigBox');box.innerHTML='';
+  const arr=current?.problemImages||[];
+  if(!arr.length){box.appendChild(makeImageError());return}
+  if(currentProblemIndex>=arr.length)currentProblemIndex=0;
+  const img=makeImg(arr[currentProblemIndex],'big-image');
+  box.appendChild(img);
 
-  document.querySelectorAll('.homeBtn[data-filter]').forEach(btn=>{
-    btn.onclick=()=>{ currentYear=null; openList(btn.dataset.filter); };
+  const pager=document.getElementById('problemPager');pager.innerHTML='';
+  if(arr.length>1){
+    const prev=document.createElement('button');prev.textContent='← 前';
+    prev.onclick=()=>{currentProblemIndex=(currentProblemIndex-1+arr.length)%arr.length;renderProblem()};
+    const mid=document.createElement('span');mid.textContent=(currentProblemIndex+1)+' / '+arr.length;
+    const next=document.createElement('button');next.textContent='次 →';
+    next.onclick=()=>{currentProblemIndex=(currentProblemIndex+1)%arr.length;renderProblem()};
+    pager.append(prev,mid,next);
+  }
+}
+document.getElementById('answerInput').addEventListener('change',async e=>{
+  if(!current)return;
+  const files=[...(e.target.files||[])];
+  for(const f of files){
+    try{current.answerImages.push(await compressImage(f))}
+    catch(err){alert('画像を読み込めませんでした')}
+  }
+  e.target.value='';
+  await putOne(current);
+  renderAnswers();
+});
+function renderAnswers(){
+  const strip=document.getElementById('answerStrip');strip.innerHTML='';
+  const arr=current?.answerImages||[];
+  document.getElementById('answerEmpty').classList.toggle('hidden',arr.length>0);
+  arr.forEach((v,i)=>{
+    const wrap=document.createElement('div');wrap.className='thumb-wrap';wrap.style.flex='0 0 auto';
+    const img=makeImg(v,'');img.style.cssText='width:100px;height:110px;object-fit:cover;border-radius:14px;border:1px solid var(--line);display:block';
+    const b=document.createElement('button');b.className='x';b.textContent='×';
+    b.onclick=async ev=>{ev.stopPropagation();current.answerImages.splice(i,1);await putOne(current);renderAnswers()};
+    wrap.append(img,b);strip.appendChild(wrap);
   });
+}
+function fillMemo(){
+  const m=current?.memo||{};
+  memoI.value=m.i||'';memoRo.value=m.ro||'';memoHa.value=m.ha||'';memoNi.value=m.ni||'';
+}
+function queueMemoSave(){
+  clearTimeout(memoTimer);
+  memoTimer=setTimeout(saveMemo,350);
+}
+async function saveMemo(){
+  if(!current)return;
+  current.memo={i:memoI.value,ro:memoRo.value,ha:memoHa.value,ni:memoNi.value};
+  await putOne(current);
+}
 
-  $('homeNav').onclick=async()=>{ currentYear=null; await refreshCount(); showScreen('homeScreen'); };
-  $('allNav').onclick=()=>{ currentYear=null; openList('all'); };
+function showProblemPane(){
+  problemPane.classList.remove('hidden');memoPane.classList.add('hidden');
+  viewerModeTitle.textContent='問題';viewerModeSub.textContent='左スワイプでメモ';
+}
+function showMemoPane(){
+  problemPane.classList.add('hidden');memoPane.classList.remove('hidden');
+  viewerModeTitle.textContent='メモ';viewerModeSub.textContent='右スワイプで問題';
+}
+let sx=0,sy=0;
+document.getElementById('swipeArea').addEventListener('touchstart',e=>{
+  sx=e.changedTouches[0].clientX;sy=e.changedTouches[0].clientY;
+},{passive:true});
+document.getElementById('swipeArea').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-sx;
+  const dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>70 && Math.abs(dx)>Math.abs(dy)){
+    if(dx<0)showMemoPane();else showProblemPane();
+  }
+},{passive:true});
 
-  $('backBtn').onclick=()=>{
-    if($('viewerScreen').classList.contains('active')) openList(currentFilter);
-    else showScreen('homeScreen');
-  };
+async function deleteCurrent(){
+  if(!current||!confirm('この問題を削除しますか？'))return;
+  await deleteOne(current.id);goHome();
+}
+function goHome(){
+  current=null;clearObjectUrls();
+  document.getElementById('homeScreen').classList.remove('hidden');
+  document.getElementById('viewerScreen').classList.add('hidden');
+  document.getElementById('backBtn').classList.add('hidden');
+  document.getElementById('screenTitle').textContent='過去問メモ';
+  document.getElementById('screenSub').textContent='問題画像とメモをシンプルに保存';
+  document.getElementById('homeNav').classList.add('active');
+  document.getElementById('listNav').classList.remove('active');
+  loadHome();window.scrollTo(0,0);
+}
+function scrollToList(){
+  goHome();
+  setTimeout(()=>{
+    document.getElementById('questionList').scrollIntoView({behavior:'smooth',block:'start'});
+    document.getElementById('homeNav').classList.remove('active');
+    document.getElementById('listNav').classList.add('active');
+  },80);
+}
+function openFull(src){
+  fullImage.src=src;fullViewer.classList.add('open');
+}
+function closeFull(){
+  fullViewer.classList.remove('open');fullImage.src='';
+}
 
-  ['memoI','memoRo','memoHa','memoNi'].forEach(id=>{
-    $(id).addEventListener('input',scheduleMemoSave);
-  });
-
-  $('prevBtn').onclick=async()=>{
-    if(currentIndex>0){ currentIndex--; await loadCurrent(); }
-  };
-  $('nextBtn').onclick=async()=>{
-    if(currentIndex<currentIds.length-1){ currentIndex++; await loadCurrent(); }
-  };
-
-
-  $('shareImagesBtn').onclick = async () => {
-    if(!currentQuestion) return;
-
-    const blobs = [currentQuestion.image, ...(currentQuestion.answers || [])].filter(Boolean);
-    if(!blobs.length){
-      alert('共有できる画像がありません。');
-      return;
-    }
-
-    const files = blobs.map((blob, index) => {
-      const type = blob.type || 'image/jpeg';
-      let ext = 'jpg';
-      if(type.includes('png')) ext = 'png';
-      else if(type.includes('webp')) ext = 'webp';
-      else if(type.includes('heic') || type.includes('heif')) ext = 'heic';
-
-      const name = index === 0
-        ? `kakomon_question.${ext}`
-        : `kakomon_answer_${index}.${ext}`;
-
-      return new File([blob], name, { type });
-    });
-
-    try{
-      if(navigator.share && (!navigator.canShare || navigator.canShare({ files }))){
-        await navigator.share({
-          files,
-          title: 'KAKOMON MEMO',
-          text: '問題画像と解答・解説画像'
-        });
-      }else{
-        alert('このブラウザでは複数画像の共有に対応していません。iPhoneのSafariでお試しください。');
-      }
-    }catch(err){
-      if(err && err.name !== 'AbortError'){
-        console.error(err);
-        alert('画像を共有できませんでした。');
-      }
-    }
-  };
-
-  $('deleteBtn').onclick=async()=>{
-    if(!currentQuestion) return;
-    if(!confirm('この問題を削除しますか？')) return;
-    await deleteQuestion(currentQuestion.id);
-    currentIds.splice(currentIndex,1);
-    if(currentIndex>=currentIds.length) currentIndex=Math.max(0,currentIds.length-1);
-    await refreshCount();
-    if(currentIds.length) await loadCurrent();
-    else await openList(currentFilter);
-  };
-
-  let startX=0,startY=0;
-  const viewer=$('viewerWrap');
-  viewer.addEventListener('touchstart',e=>{
-    const t=e.changedTouches[0]; startX=t.clientX; startY=t.clientY;
-  },{passive:true});
-  viewer.addEventListener('touchend',e=>{
-    const t=e.changedTouches[0];
-    const dx=t.clientX-startX, dy=t.clientY-startY;
-    if(Math.abs(dx)<55 || Math.abs(dx)<Math.abs(dy)*1.2) return;
-    if(dx<0) $('slides').classList.add('memo');
-    else $('slides').classList.remove('memo');
-  },{passive:true});
-
-  openDB().then(async()=>{
-    loadFolders();
-    await refreshCount();
-  }).catch(err=>{
-    alert('保存機能を開始できませんでした。Safariで開き直してください。');
-    console.error(err);
-  });
+(async()=>{
+  try{await openDB();await loadHome()}
+  catch(e){document.getElementById('questionList').innerHTML='<div class="notice">保存領域を開けませんでした。Safariを開き直してもう一度お試しください。</div>'}
 })();
 </script>
 </body>
