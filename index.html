@@ -62,8 +62,8 @@
     .slides.memo{transform:translateX(-50%)}
     .slide{width:50%;flex:0 0 50%}
     .imageCard{background:white;border:1px solid var(--line);border-radius:22px;padding:10px;box-shadow:var(--shadow)}
-    .questionImg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
-    .answerImg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
+    .questionImg{width:100%;max-height:68vh;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
+    .answerImg{width:100%;max-height:80vh;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
     .answerItem{position:relative}
     .removeAnswer{position:absolute;right:10px;top:10px;border:0;border-radius:999px;background:rgba(0,0,0,.6);color:white;width:32px;height:32px;font-weight:800}
     .statusRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
@@ -98,10 +98,9 @@
 
     .folderSection{margin-top:16px}
     .folderGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .folderBtn{border:1px solid var(--line);background:white;border-radius:18px;padding:16px;text-align:left;box-shadow:var(--shadow)}
+    .folderBtn{border:1px solid var(--line);background:#fff;border-radius:18px;padding:16px;text-align:left;box-shadow:var(--shadow)}
     .folderBtn strong{display:block;font-size:17px;margin-bottom:4px}
     .folderBtn span{font-size:12px;color:var(--sub)}
-    .folderSelect{width:100%;border:1px solid var(--line);border-radius:13px;background:white;padding:11px 12px;color:var(--text)}
 
     @media (max-width:420px){
       .grid{grid-template-columns:1fr 1fr}
@@ -109,7 +108,7 @@
       .thumb{width:76px;height:96px}
     }
   </style>
-  <link rel="apple-touch-icon" sizes="180x180" href="./fd24f841-c908-4b6c-a735-344806f52dbf.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="./fd24f841-c908-4b6c-a735-344806f52dbf.png?v=4">
   <link rel="icon" type="image/png" href="./fd24f841-c908-4b6c-a735-344806f52dbf.png">
 </head>
 <body>
@@ -178,13 +177,10 @@
         <div class="slides" id="slides">
           <div class="slide">
             <div class="imageCard">
-              <img id="viewerImage" class="questionImg" alt="問題画像">
+              <img id="viewerImage" class="questionImg" alt="問題画像"><div id="missingImageText" class="small" style="display:none;padding:18px;text-align:center">この問題画像を読み込めませんでした。新しく追加した画像は正常に保存されます。</div>
             </div>
             
-            <div class="card" style="margin-top:12px">
-              <div class="small">最後に解いた日</div>
-              <strong id="lastStudiedText">未回答</strong>
-            </div>
+            
 
             <div class="card" style="margin-top:12px">
               <div class="row between">
@@ -320,10 +316,27 @@
   }
 
   function updateNav(name){
-    ['homeNav','allNav','wrongNav'].forEach(id => $(id).classList.remove('active'));
-    if(name === 'homeScreen') $('homeNav').classList.add('active');
-    else if(currentFilter === 'wrong') $('wrongNav').classList.add('active');
-    else $('allNav').classList.add('active');
+    ['homeNav','allNav'].forEach(id => {
+      const el=$(id);
+      if(el) el.classList.remove('active');
+    });
+    if(name==='homeScreen'){
+      const el=$('homeNav'); if(el) el.classList.add('active');
+    }else{
+      const el=$('allNav'); if(el) el.classList.add('active');
+    }
+  }
+
+
+  function imageSrc(value){
+    if(!value) return '';
+    try{
+      if(value instanceof Blob) return URL.createObjectURL(value);
+      if(typeof value === 'string') return value;
+      if(value && typeof value.dataURL === 'string') return value.dataURL;
+      if(value && typeof value.src === 'string') return value.src;
+    }catch(e){}
+    return '';
   }
 
   function dateText(ts){
@@ -364,8 +377,11 @@
   async function renderFolders(){
     const all=await getAll();
     all.forEach(q=>{ if(q.year && !yearFolders.includes(q.year)) yearFolders.push(q.year); });
-    yearFolders.sort().reverse(); saveFolders();
-    const grid=$('folderGrid'); if(!grid) return; grid.innerHTML='';
+    yearFolders.sort().reverse();
+    saveFolders();
+    const grid=$('folderGrid');
+    if(!grid) return;
+    grid.innerHTML='';
     const folders=[...yearFolders];
     if(all.some(q=>!q.year)) folders.push('未分類');
     if(!folders.length){
@@ -386,7 +402,11 @@
     const name=prompt('年度を入力してください\n例：令和8年');
     if(!name||!name.trim()) return;
     const y=name.trim();
-    if(!yearFolders.includes(y)){ yearFolders.push(y); yearFolders.sort().reverse(); saveFolders(); }
+    if(!yearFolders.includes(y)){
+      yearFolders.push(y);
+      yearFolders.sort().reverse();
+      saveFolders();
+    }
     await renderFolders();
   }
 
@@ -409,7 +429,7 @@
       list.innerHTML = `<div class="empty">該当する問題はありません</div>`;
     } else {
       for(const [index,q] of filtered.entries()){
-        const url = URL.createObjectURL(q.image);
+        const url = imageSrc(q.image);
         const el = document.createElement('button');
         el.className='qitem';
         el.style.width='100%';
@@ -420,10 +440,10 @@
           <div class="qmeta">
             <strong>問題 ${index+1}</strong>
             <div class="chips">
-              ${q.result === 'correct' ? '<span class="chip ok">○ 正解</span>' : ''}
-              ${q.result === 'wrong' ? '<span class="chip ng">× 不正解</span>' : ''}
-              ${!q.result ? '<span class="chip">未回答</span>' : ''}
-              <span class="chip">${q.lastStudiedAt ? dateText(q.lastStudiedAt) : '未学習'}</span>
+              
+              
+              
+              
             </div>
           </div>`;
         el.onclick=()=>openViewerById(q.id);
@@ -436,9 +456,14 @@
   async function openViewerById(id){
     if(!currentIds.includes(id)){
       const all=await getAll();
-      currentIds=filterQuestions(all,currentFilter).map(q=>q.id);
+      currentIds=filterQuestions(all,currentFilter,currentYear).map(q=>q.id);
     }
     currentIndex=Math.max(0,currentIds.indexOf(id));
+    const q=await getQuestion(id);
+    if(q){
+      q.lastStudiedAt=Date.now();
+      await putQuestion(q);
+    }
     await loadCurrent();
     showScreen('viewerScreen');
   }
@@ -449,30 +474,24 @@
     const q=await getQuestion(id);
     if(!q){ await openList(currentFilter); return; }
     currentQuestion=q;
-    if($('viewerImage').dataset.url) URL.revokeObjectURL($('viewerImage').dataset.url);
-    const url=URL.createObjectURL(q.image);
-    $('viewerImage').src=url;
-    $('viewerImage').dataset.url=url;
+    const oldUrl=$('viewerImage').dataset.url;
+    if(oldUrl && oldUrl.startsWith('blob:')) URL.revokeObjectURL(oldUrl);
+    const url=imageSrc(q.image);
+    $('viewerImage').src=url || '';
+    $('viewerImage').dataset.url=url || '';
+    $('viewerImage').style.display = url ? 'block' : 'none';
+    const missing=$('missingImageText');
+    if(missing) missing.style.display = url ? 'none' : 'block';
     $('memoI').value=q.memos?.i || '';
     $('memoRo').value=q.memos?.ro || '';
     $('memoHa').value=q.memos?.ha || '';
     $('memoNi').value=q.memos?.ni || '';
 
-    $('lastStudiedText').textContent=dateText(q.lastStudiedAt);
     if(!q.answers) q.answers=[];
     renderAnswers();
     $('slides').classList.remove('memo');
     $('prevBtn').disabled=currentIndex===0;
     $('nextBtn').disabled=currentIndex===currentIds.length-1;
-  }
-
-  async function setResult(result){
-    if(!currentQuestion) return;
-    currentQuestion.result=result;
-    currentQuestion.lastStudiedAt=Date.now();
-    await putQuestion(currentQuestion);
-
-    $('lastStudiedText').textContent=dateText(currentQuestion.lastStudiedAt);
   }
 
   function scheduleMemoSave(){
@@ -527,7 +546,7 @@
       return;
     }
     answers.forEach((blob,idx)=>{
-      const url=URL.createObjectURL(blob);
+      const url=imageSrc(blob);
       answerUrls.push(url);
       const item=document.createElement('div');
       item.className='answerItem imageCard';
