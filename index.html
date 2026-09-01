@@ -102,6 +102,15 @@
     .folderBtn strong{display:block;font-size:17px;margin-bottom:4px}
     .folderBtn span{font-size:12px;color:var(--sub)}
 
+
+    .tapZoomHint{
+      text-align:center;
+      font-size:12px;
+      color:var(--sub);
+      margin-top:6px;
+    }
+    .questionImg,.answerImg{cursor:zoom-in}
+
     @media (max-width:420px){
       .grid{grid-template-columns:1fr 1fr}
       .homeBtn{min-height:88px}
@@ -177,7 +186,7 @@
         <div class="slides" id="slides">
           <div class="slide">
             <div class="imageCard">
-              <img id="viewerImage" class="questionImg" alt="問題画像"><div id="missingImageText" class="small" style="display:none;padding:18px;text-align:center">この問題画像を読み込めませんでした。新しく追加した画像は正常に保存されます。</div>
+              <img id="viewerImage" class="questionImg" alt="問題画像"><div class="tapZoomHint">画像をタップすると大きく開きます</div><div id="missingImageText" class="small" style="display:none;padding:18px;text-align:center">この問題画像を読み込めませんでした。新しく追加した画像は正常に保存されます。</div>
             </div>
             
             
@@ -327,6 +336,16 @@
     }
   }
 
+
+
+  function openImageInNewTab(src){
+    if(!src) return;
+    try{
+      window.open(src, '_blank');
+    }catch(e){
+      location.href = src;
+    }
+  }
 
   function imageSrc(value){
     if(!value) return '';
@@ -480,6 +499,7 @@
     $('viewerImage').src=url || '';
     $('viewerImage').dataset.url=url || '';
     $('viewerImage').style.display = url ? 'block' : 'none';
+    $('viewerImage').onclick = () => openImageInNewTab(url);
     const missing=$('missingImageText');
     if(missing) missing.style.display = url ? 'none' : 'block';
     $('memoI').value=q.memos?.i || '';
@@ -551,6 +571,8 @@
       const item=document.createElement('div');
       item.className='answerItem imageCard';
       item.innerHTML=`<img class="answerImg" src="${url}" alt="解答画像 ${idx+1}"><button class="removeAnswer" aria-label="削除">×</button>`;
+      const answerImg = item.querySelector('img');
+      if(answerImg) answerImg.onclick = () => openImageInNewTab(url);
       item.querySelector('.removeAnswer').onclick=async()=>{
         if(!confirm(`解答画像 ${idx+1} を削除しますか？`)) return;
         currentQuestion.answers.splice(idx,1);
@@ -574,6 +596,12 @@
   $('chooseImageBtn').onclick=()=>$('imageInput').click();
   $('listAddBtn').onclick=()=>$('imageInput').click();
   $('imageInput').addEventListener('change',e=>addImages([...e.target.files]));
+
+  $('answerList')?.addEventListener('click', e=>{
+    const img=e.target.closest('.answerImg');
+    if(img && img.src) openImageInNewTab(img.src);
+  });
+
   $('addAnswerBtn').onclick=()=>$('answerInput').click();
   $('answerInput').addEventListener('change',e=>addAnswers([...e.target.files]));
 
