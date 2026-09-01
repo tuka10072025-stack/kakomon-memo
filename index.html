@@ -61,9 +61,9 @@
     .slides{display:flex;width:200%;transition:transform .22s ease}
     .slides.memo{transform:translateX(-50%)}
     .slide{width:50%;flex:0 0 50%}
-    .imageCard{background:white;border:1px solid var(--line);border-radius:18px;padding:4px;box-shadow:var(--shadow)}
-    .questionImg{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:12px;background:#f6f4f8}
-    .answerImg{display:block;width:100%;height:auto;max-height:none;object-fit:contain;border-radius:12px;background:#f6f4f8}
+    .imageCard{background:white;border:1px solid var(--line);border-radius:22px;padding:10px;box-shadow:var(--shadow)}
+    .questionImg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
+    .answerImg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
     .answerItem{position:relative}
     .removeAnswer{position:absolute;right:10px;top:10px;border:0;border-radius:999px;background:rgba(0,0,0,.6);color:white;width:32px;height:32px;font-weight:800}
     .statusRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
@@ -99,16 +99,16 @@
     .folderSection{margin-top:16px}
     .folderGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .folderBtn{
-      border:1px solid var(--line);background:white;border-radius:18px;padding:16px;text-align:left;
+      border:1px solid var(--line);background:#fff;border-radius:18px;padding:16px;text-align:left;
       box-shadow:var(--shadow)
     }
     .folderBtn strong{display:block;font-size:17px;margin-bottom:4px}
     .folderBtn span{font-size:12px;color:var(--sub)}
-    .folderAdd{border-style:dashed;background:#fcfbfd}
     .folderSelect{
-      width:100%;border:1px solid var(--line);border-radius:13px;background:white;padding:11px 12px;color:var(--text)
+      width:100%;border:1px solid var(--line);border-radius:13px;background:#fff;padding:11px 12px;color:var(--text)
     }
-@media (max-width:420px){
+
+    @media (max-width:420px){
       .grid{grid-template-columns:1fr 1fr}
       .homeBtn{min-height:88px}
       .thumb{width:76px;height:96px}
@@ -152,7 +152,7 @@
             <strong>問題を追加</strong>
             <div class="badge">問題アプリのスクショを選ぶだけ</div>
           </div>
-          <label class="primary" for="imageInput" style="display:inline-block;cursor:pointer">＋ 追加</label>
+          <button class="primary" id="chooseImageBtn">＋ 追加</button>
         </div>
         <input id="imageInput" type="file" accept="image/*" multiple hidden>
       </div>
@@ -178,11 +178,8 @@
 
     <section id="listScreen" class="screen">
       <div class="row between">
-        <div>
-          <h2 class="sectionTitle" id="listTitle">問題一覧</h2>
-          <div class="small" id="listFolderSub"></div>
-        </div>
-        <label class="secondary" for="imageInput" style="display:inline-block;cursor:pointer">＋追加</label>
+        <h2 class="sectionTitle" id="listTitle">問題一覧</h2>
+        <button class="secondary" id="listAddBtn">＋追加</button>
       </div>
       <div id="questionList" class="list"></div>
     </section>
@@ -192,7 +189,7 @@
         <div class="slides" id="slides">
           <div class="slide">
             <div class="imageCard">
-              <img id="viewerImage" class="questionImg zoomable" alt="問題画像">
+              <img id="viewerImage" class="questionImg" alt="問題画像">
             </div>
             <div class="statusRow">
               <button class="statusBtn ok" id="correctBtn">○ 正解</button>
@@ -368,10 +365,7 @@
 
   function filterQuestions(all, filter, year=currentYear){
     let arr = [...all];
-    if(year !== null){
-      arr = arr.filter(q => (q.year || '未分類') === year);
-    }
-    // 問題番号は登録した順に 1,2,3...
+    if(year !== null) arr = arr.filter(q => (q.year || '未分類') === year);
     const sorted = arr.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
     if(filter === 'wrong') return sorted.filter(q => q.result === 'wrong');
     if(filter === 'due3') return sorted.filter(q => dayDiff(q.lastStudiedAt) === 3);
@@ -393,50 +387,38 @@
     localStorage.setItem('kakomonYearFolders', JSON.stringify(yearFolders));
   }
 
-  async function ensureFolderFromQuestions(){
-    const all = await getAll();
-    const found = [...new Set(all.map(q => q.year).filter(Boolean))];
-    let changed = false;
-    for(const y of found){
-      if(!yearFolders.includes(y)){
-        yearFolders.push(y);
-        changed = true;
-      }
-    }
-    if(changed){
-      yearFolders.sort().reverse();
-      saveFolders();
-    }
-  }
-
   async function renderFolders(){
-    await ensureFolderFromQuestions();
     const all = await getAll();
+    for(const q of all){
+      if(q.year && !yearFolders.includes(q.year)) yearFolders.push(q.year);
+    }
+    yearFolders.sort().reverse();
+    saveFolders();
+
     const grid = $('folderGrid');
     if(!grid) return;
     grid.innerHTML = '';
 
     const folders = [...yearFolders];
-    const unclassifiedCount = all.filter(q => !q.year).length;
-    if(unclassifiedCount > 0) folders.push('未分類');
+    if(all.some(q => !q.year)) folders.push('未分類');
 
     if(!folders.length){
-      grid.innerHTML = '<div class="small" style="grid-column:1/-1;padding:8px 2px">「＋年度」から年度フォルダを作れます。</div>';
+      grid.innerHTML = '<div class="small" style="grid-column:1/-1">「＋年度」から年度を追加できます。</div>';
       return;
     }
 
-    for(const folder of folders){
+    folders.forEach(folder=>{
       const count = all.filter(q => (q.year || '未分類') === folder).length;
       const b = document.createElement('button');
       b.className = 'folderBtn';
       b.innerHTML = `<strong>${folder}</strong><span>${count}問</span>`;
-      b.onclick = () => openFolder(folder);
+      b.onclick = ()=>{ currentYear = folder; openList('all'); };
       grid.appendChild(b);
-    }
+    });
   }
 
   async function addFolder(){
-    const name = prompt('年度を入力してください\\n例：令和8年、2026年');
+    const name = prompt('年度を入力してください\\n例：令和8年');
     if(!name) return;
     const clean = name.trim();
     if(!clean) return;
@@ -444,52 +426,27 @@
       yearFolders.push(clean);
       yearFolders.sort().reverse();
       saveFolders();
-      await renderFolders();
     }
-  }
-
-  async function openFolder(folder){
-    currentYear = folder;
-    await openList('all');
+    await renderFolders();
   }
 
   function fillYearSelect(){
     const sel = $('yearSelect');
-    if(!sel) return;
-    const value = currentQuestion?.year || '未分類';
-    const folders = [...yearFolders];
-    if(!folders.includes(value) && value !== '未分類') folders.push(value);
-    sel.innerHTML = '';
-    const un = document.createElement('option');
-    un.value = '未分類';
-    un.textContent = '未分類';
-    sel.appendChild(un);
-    for(const y of folders){
-      if(y === '未分類') continue;
+    if(!sel || !currentQuestion) return;
+    const value = currentQuestion.year || '未分類';
+    sel.innerHTML = '<option value="未分類">未分類</option>';
+    yearFolders.forEach(y=>{
       const opt = document.createElement('option');
       opt.value = y;
       opt.textContent = y;
       sel.appendChild(opt);
-    }
+    });
     sel.value = value;
   }
 
-  function pickYearForNewQuestion(){
+  function chooseYearForNewQuestion(){
     if(currentYear && currentYear !== '未分類') return currentYear;
     if(yearFolders.length === 1) return yearFolders[0];
-    if(yearFolders.length > 1){
-      const msg = '保存する年度を入力してください\\n' + yearFolders.join(' / ');
-      const name = prompt(msg, yearFolders[0]);
-      if(name && name.trim()){
-        const clean = name.trim();
-        if(!yearFolders.includes(clean)){
-          yearFolders.push(clean);
-          yearFolders.sort().reverse();
-          saveFolders();
-        }
-        return clean;
-      }
-    }
     return null;
   }
 
@@ -506,7 +463,6 @@
     currentIds = filtered.map(q=>q.id);
     const titles = {all:'すべての問題',wrong:'不正解の問題',due3:'3日前に解いた問題',due7:'1週間前に解いた問題'};
     $('listTitle').textContent = currentYear ? `${currentYear}・${titles[filter] || '問題一覧'}` : (titles[filter] || '問題一覧');
-    $('listFolderSub').textContent = currentYear ? '登録順に問題1、問題2、問題3…' : '登録順に問題1、問題2、問題3…';
     const list = $('questionList');
     list.innerHTML = '';
     if(!filtered.length){
@@ -597,31 +553,26 @@
 
   async function addImages(files){
     if(!files?.length) return;
-    try{
-      const chosenYear = pickYearForNewQuestion();
-      const now=Date.now();
-      let n=0;
-      for(const file of files){
-        const q={
-          id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${now}-${Math.random()}`,
-          image:file,
-          answers:[],
-          year:chosenYear,
-          createdAt:now+n,
-          lastStudiedAt:null,
-          result:null,
-          memos:{i:'',ro:'',ha:'',ni:''}
-        };
-        await putQuestion(q);
-        n++;
-      }
-      $('imageInput').value='';
-      await refreshCount();
-      await openList('all');
-    }catch(err){
-      console.error(err);
-      alert('写真を保存できませんでした。もう一度試してください。');
+    const chosenYear = chooseYearForNewQuestion();
+    const now=Date.now();
+    let n=0;
+    for(const file of files){
+      const q={
+        id: crypto.randomUUID ? crypto.randomUUID() : `${now}-${Math.random()}`,
+        image:file,
+        answers:[],
+        year:chosenYear,
+        createdAt:now+n,
+        lastStudiedAt:null,
+        result:null,
+        memos:{i:'',ro:'',ha:'',ni:''}
+      };
+      await putQuestion(q);
+      n++;
     }
+    $('imageInput').value='';
+    await refreshCount();
+    await openList('all');
   }
 
 
@@ -643,7 +594,7 @@
       answerUrls.push(url);
       const item=document.createElement('div');
       item.className='answerItem imageCard';
-      item.innerHTML=`<img class="answerImg zoomable" src="${url}" alt="解答画像 ${idx+1}"><button class="removeAnswer" aria-label="削除">×</button>`;
+      item.innerHTML=`<img class="answerImg" src="${url}" alt="解答画像 ${idx+1}"><button class="removeAnswer" aria-label="削除">×</button>`;
       item.querySelector('.removeAnswer').onclick=async()=>{
         if(!confirm(`解答画像 ${idx+1} を削除しますか？`)) return;
         currentQuestion.answers.splice(idx,1);
@@ -666,7 +617,7 @@
 
   $('addFolderBtn').onclick = addFolder;
 
-  $('yearSelect').addEventListener('change', async e => {
+  $('yearSelect').addEventListener('change', async e=>{
     if(!currentQuestion) return;
     const v = e.target.value;
     currentQuestion.year = v === '未分類' ? null : v;
@@ -679,6 +630,8 @@
     await renderFolders();
   });
 
+  $('chooseImageBtn').onclick=()=>$('imageInput').click();
+  $('listAddBtn').onclick=()=>$('imageInput').click();
   $('imageInput').addEventListener('change',e=>addImages([...e.target.files]));
   $('addAnswerBtn').onclick=()=>$('answerInput').click();
   $('answerInput').addEventListener('change',e=>addAnswers([...e.target.files]));
@@ -762,7 +715,6 @@
     else await openList(currentFilter);
   };
 
-
   let startX=0,startY=0;
   const viewer=$('viewerWrap');
   viewer.addEventListener('touchstart',e=>{
@@ -785,6 +737,5 @@
   });
 })();
 </script>
-
 </body>
 </html>
