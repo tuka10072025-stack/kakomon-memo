@@ -203,7 +203,6 @@ let current=null;
 let currentProblemIndex=0;
 let pendingNewImages=[];
 let memoTimer=null;
-let objectUrls=[];
 
 function openDB(){
   return new Promise((resolve,reject)=>{
@@ -295,45 +294,52 @@ function normalizeRecord(q){
     createdAt:q.createdAt ?? q.date ?? Date.now()
   };
 }
-function clearObjectUrls(){
-  objectUrls.forEach(u=>{try{URL.revokeObjectURL(u)}catch(e){}});
-  objectUrls=[];
+function clearObjectUrls(){}
+
+function blobToDataURL(blob){
+  return new Promise((resolve,reject)=>{
+    const fr=new FileReader();
+    fr.onload=()=>resolve(fr.result);
+    fr.onerror=()=>reject(fr.error);
+    fr.readAsDataURL(blob);
+  });
 }
-function toRenderable(value){
+
+async function toRenderable(value){
   if(!value)return null;
-  if(typeof value==='string') return value;
-  if(value instanceof Blob){
-    const u=URL.createObjectURL(value);objectUrls.push(u);return u;
+
+  if(typeof value==='string'){
+    // Old blob: URLs only live for the session that created them.
+    // Never try to open those again on iPhone Safari.
+    if(value.startsWith('blob:')) return null;
+    return value;
   }
-  if(value instanceof ArrayBuffer){
-    const u=URL.createObjectURL(new Blob([value]));objectUrls.push(u);return u;
-  }
-  if(value.data instanceof Blob){
-    const u=URL.createObjectURL(value.data);objectUrls.push(u);return u;
-  }
-  if(value.blob instanceof Blob){
-    const u=URL.createObjectURL(value.blob);objectUrls.push(u);return u;
-  }
-  return value.data || value.src || value.url || value.dataUrl || value.base64 || null;
+
+  if(value instanceof Blob) return await blobToDataURL(value);
+  if(value instanceof ArrayBuffer) return await blobToDataURL(new Blob([value]));
+  if(value.data instanceof Blob) return await blobToDataURL(value.data);
+  if(value.blob instanceof Blob) return await blobToDataURL(value.blob);
+
+  const v=value.data || value.src || value.url || value.dataUrl || value.base64 || null;
+  if(typeof v==='string' && v.startsWith('blob:')) return null;
+  return v;
 }
-function makeImg(value,className='thumb'){
-  const src=toRenderable(value);
-  const img=document.createElement('img');img.className=className;
-  if(!src){
-    img.alt='画像を読み込めません';
-    return img;
-  }
+
+async function makeImg(value,className='thumb'){
+  const src=await toRenderable(value);
+  if(!src) return makeImageError();
+
+  const img=document.createElement('img');
+  img.className=className;
   img.src=src;
   img.onclick=()=>openFull(src);
-  img.onerror=()=>{
-    img.replaceWith(makeImageError());
-  };
+  img.onerror=()=>img.replaceWith(makeImageError());
   return img;
 }
 function makeImageError(){
   const d=document.createElement('div');
   d.className='image-error';
-  d.innerHTML='この画像データは以前の保存方法で参照が切れています。<br>画像をもう一度追加すると、今後は消えにくい形式で保存されます。';
+  d.innerHTML='この画像は以前の一時保存URLが切れています。<br>この画像だけは復元できないため、もう一度追加してください。';
   return d;
 }
 
@@ -379,7 +385,7 @@ async function loadHome(){
     const item=document.createElement('div');item.className='item';item.onclick=()=>openQuestion(q.id);
     const first=q.problemImages[0];
     let thumb;
-    const src=toRenderable(first);
+    const src=await toRenderable(first);
     if(src){
       thumb=document.createElement('img');thumb.className='item-thumb';thumb.src=src;
       thumb.onerror=()=>{thumb.style.display='none'};
@@ -408,12 +414,12 @@ async function openQuestion(id){
   renderAnswers();
   window.scrollTo(0,0);
 }
-function renderProblem(){
+async function renderProblem(){
   const box=document.getElementById('problemBigBox');box.innerHTML='';
   const arr=current?.problemImages||[];
   if(!arr.length){box.appendChild(makeImageError());return}
   if(currentProblemIndex>=arr.length)currentProblemIndex=0;
-  const img=makeImg(arr[currentProblemIndex],'big-image');
+  const img=await makeImg(arr[currentProblemIndex],'big-image');
   box.appendChild(img);
 
   const pager=document.getElementById('problemPager');pager.innerHTML='';
@@ -437,13 +443,13 @@ document.getElementById('answerInput').addEventListener('change',async e=>{
   await putOne(current);
   renderAnswers();
 });
-function renderAnswers(){
+async function renderAnswers(){
   const strip=document.getElementById('answerStrip');strip.innerHTML='';
   const arr=current?.answerImages||[];
   document.getElementById('answerEmpty').classList.toggle('hidden',arr.length>0);
   arr.forEach((v,i)=>{
     const wrap=document.createElement('div');wrap.className='thumb-wrap';wrap.style.flex='0 0 auto';
-    const img=makeImg(v,'');img.style.cssText='width:100px;height:110px;object-fit:cover;border-radius:14px;border:1px solid var(--line);display:block';
+    const img=await makeImg(v,'');img.style.cssText='width:100px;height:110px;object-fit:cover;border-radius:14px;border:1px solid var(--line);display:block';
     const b=document.createElement('button');b.className='x';b.textContent='×';
     b.onclick=async ev=>{ev.stopPropagation();current.answerImages.splice(i,1);await putOne(current);renderAnswers()};
     wrap.append(img,b);strip.appendChild(wrap);
