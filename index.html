@@ -220,6 +220,7 @@
       </div>
 
       <div class="toolbar" style="margin-top:14px">
+        <button class="primary" id="shareImagesBtn">画像を共有</button>
         <button class="secondary" id="prevBtn">前の問題</button>
         <button class="secondary" id="nextBtn">次の問題</button>
         <button class="danger" id="deleteBtn">削除</button>
@@ -530,6 +531,48 @@
   };
   $('nextBtn').onclick=async()=>{
     if(currentIndex<currentIds.length-1){ currentIndex++; await loadCurrent(); }
+  };
+
+
+  $('shareImagesBtn').onclick = async () => {
+    if(!currentQuestion) return;
+
+    const blobs = [currentQuestion.image, ...(currentQuestion.answers || [])].filter(Boolean);
+    if(!blobs.length){
+      alert('共有できる画像がありません。');
+      return;
+    }
+
+    const files = blobs.map((blob, index) => {
+      const type = blob.type || 'image/jpeg';
+      let ext = 'jpg';
+      if(type.includes('png')) ext = 'png';
+      else if(type.includes('webp')) ext = 'webp';
+      else if(type.includes('heic') || type.includes('heif')) ext = 'heic';
+
+      const name = index === 0
+        ? `kakomon_question.${ext}`
+        : `kakomon_answer_${index}.${ext}`;
+
+      return new File([blob], name, { type });
+    });
+
+    try{
+      if(navigator.share && (!navigator.canShare || navigator.canShare({ files }))){
+        await navigator.share({
+          files,
+          title: 'KAKOMON MEMO',
+          text: '問題画像と解答・解説画像'
+        });
+      }else{
+        alert('このブラウザでは複数画像の共有に対応していません。iPhoneのSafariでお試しください。');
+      }
+    }catch(err){
+      if(err && err.name !== 'AbortError'){
+        console.error(err);
+        alert('画像を共有できませんでした。');
+      }
+    }
   };
 
   $('deleteBtn').onclick=async()=>{
