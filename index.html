@@ -61,10 +61,10 @@
     .slides{display:flex;width:200%;transition:transform .22s ease}
     .slides.memo{transform:translateX(-50%)}
     .slide{width:50%;flex:0 0 50%}
-    .imageCard{background:white;border:1px solid var(--line);border-radius:22px;padding:10px;box-shadow:var(--shadow)}
-    .questionImg{width:100%;max-height:68vh;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
-    .answerImg{width:100%;max-height:80vh;object-fit:contain;border-radius:16px;display:block;background:#f6f4f8}
-    .answerItem{position:relative}
+    .imageCard{background:white;border:0;border-radius:0;padding:0;box-shadow:none;margin-left:-16px;margin-right:-16px;width:calc(100% + 32px);overflow:hidden}
+    .questionImg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:0;display:block;background:#f6f4f8}
+    .answerImg{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:0;display:block;background:#f6f4f8}
+    .answerItem{position:relative;margin-left:-16px;margin-right:-16px;width:calc(100% + 32px);background:white}
     .removeAnswer{position:absolute;right:10px;top:10px;border:0;border-radius:999px;background:rgba(0,0,0,.6);color:white;width:32px;height:32px;font-weight:800}
     .statusRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
     .statusBtn{border:2px solid transparent;background:white;border-radius:16px;padding:14px;font-weight:800;box-shadow:var(--shadow)}
@@ -656,6 +656,7 @@
       const item=document.createElement('div');
       item.className='answerItem imageCard';
       item.innerHTML=`<img class="answerImg zoomable" src="${url}" alt="解答画像 ${idx+1}"><button class="removeAnswer" aria-label="削除">×</button>`;
+      item.querySelector('img').onclick = () => openZoom(url);
       item.querySelector('.removeAnswer').onclick=async()=>{
         if(!confirm(`解答画像 ${idx+1} を削除しますか？`)) return;
         currentQuestion.answers.splice(idx,1);
